@@ -1,8 +1,10 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace HashCode2018
 {
@@ -29,19 +31,47 @@ namespace HashCode2018
 
 	        SetupEnvironment(inputFileAsString);
 
-			var submissionFileContent = CalculateTimes();
+			var carRideResult = CalculateTimes();
+
+			var submissionFileContent = FormatResult(carRideResult);
 
 			File.WriteAllText(Path.Combine(baseInputFolder, "a_example.out"), submissionFileContent);
 
 			Console.WriteLine("Done with example.\n");
 		}
 
-	    private static string CalculateTimes()
+	    private static string FormatResult(Dictionary<int, List<int>> carRideResult)
 	    {
-		    throw new NotImplementedException();
+		    var sb = new StringBuilder();
+
+		    foreach (var carRide in carRideResult)
+		    {
+			    var theList = string.Empty;
+
+			    foreach (var ride in carRide.Value)
+			    {
+				    theList += ride + " ";
+			    }
+			    var line = $"{carRide.Key} {theList.Trim()}";
+
+			    sb.AppendLine(line);
+		    }
+
+		    return sb.ToString();
+
 	    }
 
-	    private static void SetupEnvironment(string inputFileAsString)
+	    private static Dictionary<int, List<int>> CalculateTimes()
+	    {
+		    Dictionary<int,List<int>> carRideResult = new Dictionary<int, List<int>>();
+
+		    carRideResult.Add(1, new List<int> { 0 });
+		    carRideResult.Add(2, new List<int> { 2,1 });
+
+		    return carRideResult;
+	    }
+
+		private static void SetupEnvironment(string inputFileAsString)
 	    {
 			var lines = inputFileAsString.Split(new[] { "\n", "\r" }, StringSplitOptions.RemoveEmptyEntries);
 
