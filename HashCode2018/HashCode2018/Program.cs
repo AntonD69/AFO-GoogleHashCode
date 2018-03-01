@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 
@@ -15,19 +16,30 @@ namespace HashCode2018
 	    private static int _rides;
 	    private static int _bonus;
 	    private static int _steps;
+		private static char[,] _grid;
+		private static List<Ride> _listOfRides = new List<Ride>();
 
 		private static void Main(string[] args)
-        {
-	        // Example file
-	        var inputFileAsString = File.ReadAllText(@".\Inputs\a_example.in"));
+		{
+			var baseInputFolder = ".\\InputFiles\\";
+
+			// Example file
+			var inputFileAsString = File.ReadAllText(Path.Combine(baseInputFolder,"a_example.in"));
 	        Console.WriteLine("Processing a_example file...");
 
 	        SetupEnvironment(inputFileAsString);
 
-			//var result = CalculateTimes();
-	        Console.WriteLine("Done.\n");
+			var submissionFileContent = CalculateTimes();
 
+			File.WriteAllText(Path.Combine(baseInputFolder, "a_example.out"), submissionFileContent);
+
+			Console.WriteLine("Done with example.\n");
 		}
+
+	    private static string CalculateTimes()
+	    {
+		    throw new NotImplementedException();
+	    }
 
 	    private static void SetupEnvironment(string inputFileAsString)
 	    {
@@ -38,11 +50,33 @@ namespace HashCode2018
 
 		    _rows = int.Parse(_header.Split(' ').First());
 		    _columns = int.Parse(_header.Split(' ').Skip(1).First());
-			_vehicles = int.Parse(_header.Split(' ').Skip(1).First());
-			_rides = int.Parse(_header.Split(' ').Skip(1).First());
-			_bonus = int.Parse(_header.Split(' ').Skip(1).First());
-			_steps = int.Parse(_header.Split(' ').Skip(1).First());
+			_vehicles = int.Parse(_header.Split(' ').Skip(2).First());
+			_rides = int.Parse(_header.Split(' ').Skip(3).First());
+			_bonus = int.Parse(_header.Split(' ').Skip(4).First());
+			_steps = int.Parse(_header.Split(' ').Skip(5).First());
 
+		    _grid = new char[_columns, _rows];
+
+			foreach (var line in _content)
+		    {
+			    var numbers = line.Split(' ').ToList();
+
+				_listOfRides.Add(new Ride
+			    {
+				    FromPoint = new Point(int.Parse(numbers[0]), int.Parse(numbers[1])),
+				    ToPoint = new Point(int.Parse(numbers[2]), int.Parse(numbers[3])),
+					EarliestStart = int.Parse(numbers[4]),
+					LatestFinish = int.Parse(numbers[5])
+			    });
+		    }
 		}
+    }
+
+	public class Ride
+	{
+		public Point FromPoint { get; set; }
+		public Point ToPoint { get; set; }
+		public int EarliestStart { get; set; }
+		public int LatestFinish { get; set; }
 	}
 }
