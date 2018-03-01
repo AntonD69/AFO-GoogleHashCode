@@ -1,0 +1,16 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+bin/
+obj/
+Application/OnlineServicesV4.v12.suo
+*.suo
+*.user
+*.log
+*.pdb
+*.mocktest
+/Application/AF.Omniwhere.Services.Hosts/Compiled Mapping DLLs/*.dll
+/Application/AF.Omniwhere.Services.Hosts/Compiled Mapping DLLs/*.pdb
+*.pubxml
+Application/.vs/
