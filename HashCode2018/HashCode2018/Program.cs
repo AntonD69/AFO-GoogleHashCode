@@ -1,12 +1,9 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
-using System.Threading;
 
 namespace HashCode2018
 {
@@ -20,7 +17,6 @@ namespace HashCode2018
 		private static int _wantedRides;
 		private static int _bonusPoints;
 		private static int _totalTicks;
-		private static char[,] _grid;
 		private static List<WantedRide> _listOfRides = new List<WantedRide>();
 
 		private static void Main(string[] args)
@@ -28,8 +24,8 @@ namespace HashCode2018
 			var baseInputFolder = ".\\InputFiles\\";
 
 			//var baseFileName = "a_example"; 
-			var baseFileName = "b_should_be_easy";
-			//var baseFileName = "c_no_hurry";
+			//var baseFileName = "b_should_be_easy";
+			var baseFileName = "c_no_hurry";
 			//var baseFileName = "d_metropolis";
 			//var baseFileName = "e_high_bonus";
 
@@ -74,79 +70,51 @@ namespace HashCode2018
 
 			for (int currentTimeTick = 0; currentTimeTick < _totalTicks; currentTimeTick++)
 			{
-				var timeTicksLeftToEnd = _totalTicks - currentTimeTick;
-
-				var availableRides = _listOfRides.Where(x => x.DistanceTicks < timeTicksLeftToEnd && x.IsAvailable).ToList();
-				var availableCars = cars.Where(c => c.IsAvailable).ToList();
-
-				Console.WriteLine($"Tick [{currentTimeTick}] of [{_totalTicks}]");
-				Console.WriteLine($"   Cars Available : {availableCars.Count}]");
-				Console.WriteLine($"   Rides Available : {availableRides.Count}]");
-
-				foreach (var car in availableCars)
-				{
-					//Get the Longest Rides
-					//var maxTotalTicks = 0;
-					WantedRide takeRide = null;
-
-					//foreach (var availableRide in availableRides)
-					//{
-					//	var checkTotalRideTicks = GetDistanceTicks(car.CurrentPosition, availableRide.FromPoint, availableRide.ToPoint);
-					//	var ticksToStart = GetDistanceTicks(car.CurrentPosition, availableRide.FromPoint);
-
-					//	if (checkTotalRideTicks > maxTotalTicks
-					//		&& availableRide.EarliestStart >= (ticksToStart + currentTimeTick)
-					//		&& checkTotalRideTicks + currentTimeTick < availableRide.LatestFinish
-					//		&& availableRide.IsAvailable)
-					//	{
-					//		maxTotalTicks = checkTotalRideTicks;
-					//		takeRide = availableRide;
-					//	}
-					//}
-
-
-					//if (takeRide != null)
-					//{
-					//	var totalRideTicks = GetDistanceTicks(car.CurrentPosition, takeRide.FromPoint, takeRide.ToPoint);
-
-					//	car.AddRideIndex(takeRide.Index);
-					//	car.AvailableAgainAtTimeTick = totalRideTicks + currentTimeTick;
-					//	car.AvailableAtPoint = takeRide.ToPoint;
-					//	car.IsAvailable = false;
-					//	takeRide.IsAvailable = false;
-					//}
-
-					if (takeRide == null)
-					{
-						//Find Closest Pickup Time.
-
-						var ridesByTicks = availableRides.Where(x => x.IsAvailable).OrderBy(r => r.EarliestStart);
-
-						var closestTick = GetClosestTick(currentTimeTick, ridesByTicks);
-
-						var closestPickupPoint = ridesByTicks
-							.Where(c => c.EarliestStart == closestTick)
-							.OrderBy(c => c.GetStartTicks(car.CurrentPosition)).FirstOrDefault();
-
-						if (closestPickupPoint != null)
-						{
-							var totalRideTicks = GetDistanceTicks(car.CurrentPosition, closestPickupPoint.FromPoint, closestPickupPoint.ToPoint);
-
-							car.AddRideIndex(closestPickupPoint.Index);
-							car.AvailableAgainAtTimeTick = totalRideTicks + currentTimeTick;
-							car.AvailableAtPoint = closestPickupPoint.ToPoint;
-							car.IsAvailable = false;
-							closestPickupPoint.IsAvailable = false;
-						}
-					}
-				}
-
 				foreach (var car in cars)
 				{
 					if (currentTimeTick == car.AvailableAgainAtTimeTick)
 					{
 						car.IsAvailable = true;
 						car.CurrentPosition = car.AvailableAtPoint;
+					}
+				}
+
+				var timeTicksLeftToEnd = _totalTicks - currentTimeTick;
+
+				var missedRides = _listOfRides.Where(x => x.IsAvailable).ToList();
+
+				var availableRides = _listOfRides.Where(x => x.DistanceTicks <= timeTicksLeftToEnd && x.IsAvailable).ToList();
+
+				var availableCars = cars.Where(c => c.IsAvailable).ToList();
+
+				Console.WriteLine($"Tick [{currentTimeTick}] of [{_totalTicks}], " +
+					$"Cars Available [{availableCars.Count}], " +
+					$"Rides Available [{availableRides.Count}/{missedRides.Count}]");
+
+				foreach (var car in availableCars)
+				{
+					//Find Closest Pickup Time.
+
+					var ridesByTicks = _listOfRides.Where(x => x.IsAvailable).OrderBy(r => r.EarliestStart).ToList();
+
+					var closestTick = GetClosestTick(currentTimeTick, ridesByTicks);
+
+					//From the list get the one with max bonus points
+					var nextRideOptions = ridesByTicks
+						.Where(r => r.EarliestStart == closestTick)
+						.OrderBy(r => r.LatestFinish);
+
+					var nextRide = GetClosestRide(car, nextRideOptions);
+
+					if (nextRide != null)
+					{
+						var totalRideTicks = GetDistanceTicks(car.CurrentPosition, nextRide.FromPoint, nextRide.ToPoint);
+
+						car.AddRideIndex(nextRide.Index);
+						car.AvailableAgainAtTimeTick = totalRideTicks + currentTimeTick;
+						car.AvailableAtPoint = nextRide.ToPoint;
+						car.IsAvailable = false;
+						nextRide.IsAvailable = false;
 					}
 				}
 			}
@@ -161,9 +129,28 @@ namespace HashCode2018
 			return answer;
 		}
 
-		private static int GetClosestTick(int currentTimeTick, IOrderedEnumerable<WantedRide> ridesByTicks)
+		private static WantedRide GetClosestRide(Car car, IEnumerable<WantedRide> nextRideOptions)
 		{
-			var closestTick = 20000;
+			var closestRideTick = 1000000;
+
+			WantedRide returnedRide = null;
+
+			foreach (var ride in nextRideOptions)
+			{
+				var distanceTicks = GetDistanceTicks(ride.FromPoint, car.CurrentPosition);
+
+				if (distanceTicks < closestRideTick)
+				{
+					returnedRide = ride;
+				}
+			}
+			;
+			return returnedRide;
+		}
+
+		private static int GetClosestTick(int currentTimeTick, IEnumerable<WantedRide> ridesByTicks)
+		{
+			var closestTick = 1000000;
 
 			foreach (var ride in ridesByTicks)
 			{
@@ -205,8 +192,6 @@ namespace HashCode2018
 			_wantedRides = int.Parse(_header.Split(' ').Skip(3).First());
 			_bonusPoints = int.Parse(_header.Split(' ').Skip(4).First());
 			_totalTicks = int.Parse(_header.Split(' ').Skip(5).First());
-
-			_grid = new char[_columns, _rows];
 
 			var index = 0;
 
